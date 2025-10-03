@@ -1,0 +1,30 @@
+OpenXcom Accuracy to hitchance Converter.
+
+Uses a command-line interface that allows you to pass in the required information to turn the not-so-accurate accuracy number on a shot (or your crosshair with UFOExtender accuracy) to an accurate hit chance percentage.
+
+The output will be rounded to a single decimal position
+
+How to compile:
+Sorry, I have very limited knowledge of this.
+
+Usage:
+HitChanceCalc.exe <Option> <value>
+Options list:
+--help,       -h                      | Shows the list of options and what they mean.
+--listunits,  -l                      | Shows all units that can be shot at.
+--dist,       -d <x,y,z>              | 3D distance between the shooter and target in tiles as x,y,z (required)
+--unit,       -u <name>               | Name of the unit you are aiming at. (default: Muton)
+--kneel,      -k <true|false>         | Is the unit you are aiming at kneeling or not. (default: false)
+--mode,       -m <Vanilla|Uniform>    | Chooses the spread model that you wish to test. (default: Vanilla)
+--acc,        -a <whole number>       | Accuracy value in whole percents. (default: omitted). If omitted, runs a full accuracy sweep of [0%, 110%] and writes to an output file named output.csv.
+
+The order of options does not matter, however --help and --listunits will take precendence to other options.
+For the distance you must put the 3 coordinate values inside quotes to group them together as one value. (see examples below)
+
+Examples:
+HitChanceCalc.exe -d "14, 2, 1" -a 73
+>> The hit chance for shooting at a(n) Muton (14, 2, 1) tiles away with an accuracy of 73% is: 76.7%
+HitChanceCalc.exe -m Uniform -u Chryssalid -a 46 -d "4, 6, 0"
+>> The hit chance for shooting at a(n) Muton (4, 6, 0) tiles away with an accuracy of 46% is: 61.0%
+HitChanceCalc.exe -m Uniform --unit Cyberdisc --dist "21, 13, 2"
+>> Cyberdisc at (21, 13, 2) Done! (Note: Output will be in "output.csv")
