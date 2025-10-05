@@ -11,13 +11,14 @@ struct Position
     int x{0};
     int y{0};
     int z{0};
-    Position(int xTile, int yTile, int zTile);
-    void ToVoxel();
+    Position(int xVoxel, int yVoxel, int zVoxel);
     bool isValid() const;
 };
 inline std::ostream& operator<<(std::ostream& ostream, const Position& pos)
 {
-    ostream << std::format("({}, {}, {})", pos.x / static_cast<double>(Constants::TILE_WIDTH), pos.y / static_cast<double>(Constants::TILE_WIDTH),
+    ostream << std::format("({}, {}, {})",
+                           pos.x / static_cast<double>(Constants::TILE_WIDTH),
+                           pos.y / static_cast<double>(Constants::TILE_WIDTH),
                            pos.z / static_cast<double>(Constants::TILE_HEIGHT));
     return ostream;
 }
@@ -39,17 +40,15 @@ namespace AccuracyTest
 {
 struct DevVals
 {
-    // 0 Deviation is not possible to get however it still has
-    // position (0, 0, 0) as a shot and that shot will hit.
+    // 0 Deviation is not possible, however it would still have (0, 0, 0) as a shot that will hit.
     int deviation{0};
     int numHits{1};
     int numShots{1};
     DevVals(int dev, int numberHits, int numberShots);
 };
-enum class FiringMode
+enum FiringMode
 {
     Vanilla,
     Uniform,
-    Angular,
 };
 } // namespace AccuracyTest

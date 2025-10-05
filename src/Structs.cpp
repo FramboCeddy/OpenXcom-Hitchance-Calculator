@@ -5,23 +5,22 @@
 namespace OpenXcom
 {
 Position::Position(int xVoxel, int yVoxel, int zVoxel)
-    : x{xVoxel}, y{yVoxel}, z{zVoxel}
+    : x{xVoxel}
+    , y{yVoxel}
+    , z{zVoxel}
 {
-}
-void Position::ToVoxel()
-{
-    x *= Constants::TILE_WIDTH;
-    y *= Constants::TILE_WIDTH;
-    z *= Constants::TILE_HEIGHT;
 }
 
 bool Position::isValid() const
 {
-    return (x >= 0 && y >= 0 && z >= 0 && (x != 0 || y != 0 || z != 0));
+    return (x >= 0 && y >= 0 && z >= 0 && !(x == 0 && y == 0 && z == 0));
 }
 
 Unit::Unit(std::string alienRace, int alienDiameter, int standHeight, int kneelHeight)
-    : race{alienRace}, diameter{alienDiameter}, standHalfHeight{standHeight / 2.0}, kneelHalfHeight{(kneelHeight == -1) ? standHeight / 2.0 : kneelHeight / 2.0}
+    : race{alienRace}
+    , diameter{alienDiameter}
+    , standHalfHeight{standHeight / 2.0}
+    , kneelHalfHeight{(kneelHeight == -1) ? standHeight / 2.0 : kneelHeight / 2.0}
 {
 }
 double Unit::GetHalfHeight(bool kneeling) const
@@ -33,9 +32,9 @@ double Unit::GetHalfHeight(bool kneeling) const
 namespace AccuracyTest
 {
 DevVals::DevVals(int dev, int numberHits, int numberShots)
+    : deviation{dev}
+    , numHits{numberHits}
+    , numShots{numberShots}
 {
-    deviation = dev;
-    numHits = numberHits;
-    numShots = numberShots;
 }
 } // namespace AccuracyTest

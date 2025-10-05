@@ -1,4 +1,5 @@
 #include "cli.h"
+#include "Constants.h"
 #include <iostream>
 #include <sstream>
 #include <stdlib.h>
@@ -28,7 +29,7 @@ void printHelp(const std::string& progName)
               << "  --unit,       -u <name>               | Name of the unit you are aiming at. (default: Muton)\n"
               << "  --kneel,      -k <true|false>         | Is the unit you are aiming at kneeling or not. (default: false)\n"
               << "  --mode,       -m <Vanilla|Uniform>    | Chooses the spread model that you wish to test. (default: Vanilla)\n"
-              << "  --acc,        -a <whole number>       | Accuracy value in whole percents. (default: omitted)\n"
+              << "  --acc,        -a <N>                  | Accuracy value in whole percents. (default: omitted)\n"
               << "                                        | If omitted, runs a full accuracy sweep of [0%, 110%] and writes to a file named output.csv\n"
               << std::flush;
 }
@@ -36,52 +37,67 @@ void printHelp(const std::string& progName)
 void printUnits()
 {
     std::cout << "List of all available units:\n"
-              << "You can type them in 3 different ways: lowercase, UPPERCASE and Titlecase\n"
-              << "Sectoid,\nMuton,\nSectopod,\nSoldier,\nCyberdisc,\nCelatid,\nSilacoid,\n"
+              << "celatid,\nchryssalid (= muton),\ncivilian (= muton),\ncyberdisc,\nethereal,\nfloater (= muton),\nhovertank,\nmuton,\nreaper (= sectopod),\nsectoid,\nsectopod,\nsilacoid,\nsoldier,\ntank,\n"
               << std::flush;
 }
 
-OpenXcom::Unit parseUnit(const std::string& Str)
+OpenXcom::Unit parseUnit(std::string Str)
 {
-    if (Str == "Sectoid" || Str == "SECTOID" || Str == "sectoid")
+    std::transform(Str.begin(), Str.end(), Str.begin(), ::tolower);
+    if (Str == "sectoid")
     {
         return Constants::SECTOID;
     }
-    if (Str == "Muton" || Str == "MUTON" || Str == "muton")
+    if (Str == "muton" || Str == "floater" || Str == "chryssalid" || Str == "civilian")
     {
         return Constants::MUTON;
     }
-    if (Str == "Sectopod" || Str == "SECTOPOD" || Str == "sectopod")
+    if (Str == "snakeman" || Str == "zombie")
+    {
+        return Constants::SNAKEMAN;
+    }
+    if (Str == "ethereal")
+    {
+        return Constants::ETHEREAL;
+    }
+    if (Str == "sectopod" || Str == "reaper")
     {
         return Constants::SECTOPOD;
     }
-    if (Str == "Soldier" || Str == "SOLDIER" || Str == "soldier")
+    if (Str == "soldier")
     {
-        return Constants::XCOMSOLDIER;
+        return Constants::SOLDIER;
     }
-    if (Str == "Cyberdisc" || Str == "CYBERDISC" || Str == "cyberdisc")
+    if (Str == "cyberdisc")
     {
         return Constants::CYBERDISC;
     }
-    if (Str == "Celatid" || Str == "CELATID" || Str == "celatid")
+    if (Str == "celatid")
     {
         return Constants::CELATID;
     }
-    if (Str == "Silacoid" || Str == "SILACOID" || Str == "silacoid")
+    if (Str == "silacoid")
     {
         return Constants::SILACOID;
+    }
+    if (Str == "tank")
+    {
+        return Constants::TANK;
+    }
+    if (Str == "hovertank")
+    {
+        return Constants::HOVERTANK;
     }
     // muton by default as most units are 7 wide and ~20 high
     return Constants::MUTON;
 }
 
 OpenXcom::Position parsePosition(const std::string& coordStr)
-{ // --- Parse coordinates ---
+{
     std::stringstream ss(coordStr);
     std::vector<int> coords;
     coords.reserve(3);
     std::string item;
-    // TODO: this should avoid creating a vector and a while loop because we should expect 1, 2 or 3 comma seperated integers
     while (std::getline(ss, item, ','))
     {
         item = trim(item);
@@ -101,32 +117,32 @@ OpenXcom::Position parsePosition(const std::string& coordStr)
 }
 
 auto parseAccuracy(const std::string& accStr)
-{ // --- Parse integer ---
-    int accuracy;
+{
+    int accuracy{};
     try
     {
         accuracy = std::stoi(trim(accStr));
     }
     catch (const std::invalid_argument&)
     {
-        std::cerr << "Invalid accuracy: " << accStr << " - must be a positive integer\n";
+        std::cerr << "Invalid accuracy: " << accStr << " - must be a positive whole number\n";
         return -1;
     }
     return accuracy;
 }
 
-std::tuple<OpenXcom::Position, OpenXcom::Unit, AccuracyTest::FiringMode, bool, int> parseCLI(int argc, char* argv[])
-{ // TODO: Should make this mess of a tuple into something cleaner like a struct
+cliArgs parseCLI(int argc, char* argv[])
+{
     // default values
     OpenXcom::Position pos{-1, -1, -1};
     OpenXcom::Unit target{Constants::MUTON};
-    AccuracyTest::FiringMode mode{AccuracyTest::FiringMode::Vanilla};
-    bool kneeling = false;
-    int accuracy = -1;
-    // --- Manual parser (order-independent, with aliases) ---
+    AccuracyTest::FiringMode mode{AccuracyTest::Vanilla};
+    bool kneeling{false};
+    int accuracy{-1};
+    // Manual parser
     for (int i{1}; i < argc; ++i)
     {
-        std::string arg = argv[i];
+        std::string arg{argv[i]};
 
         if (arg == "--help" || arg == "-h")
         {
@@ -141,12 +157,13 @@ std::tuple<OpenXcom::Position, OpenXcom::Unit, AccuracyTest::FiringMode, bool, i
         else if ((arg == "--mode" || arg == "-m") && i + 1 < argc)
         {
             std::string str(argv[++i]);
-            if (str == "Uniform" || str == "uniform" || str == "UNIFORM")
+            std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+            if (str == "uniform")
             {
                 mode = AccuracyTest::FiringMode::Uniform;
             }
             // Unnecesary as it's the default
-            else if (str == "Vanilla" || str == "vanilla" || str == "VANILLA")
+            else if (str == "vanilla")
             {
                 mode = AccuracyTest::FiringMode::Vanilla;
             }

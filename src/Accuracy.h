@@ -1,7 +1,13 @@
 #pragma once
 #include "Structs.h"
-#include "Xcom.h"
 #include <vector>
+
+namespace OpenXcom
+{
+int CalcZShiftVanilla(const Position& Pos);
+int CalcZShiftUniform(const Position& Pos);
+} // namespace OpenXcom
+
 namespace AccuracyTest
 {
 constexpr bool PosInCircle(const OpenXcom::Position& pos, int diameter);
@@ -13,9 +19,3 @@ void CalcOneDistVanilla(const OpenXcom::Position& distance, const OpenXcom::Unit
 void CalcOneDistUniform(const OpenXcom::Position& distance, const OpenXcom::Unit& alien, bool kneeling = false, int accuracy = -1);
 std::vector<double> CalcHitChances(const std::vector<double>& devHitChances);
 } // namespace AccuracyTest
-namespace AngularFiringSpread
-{
-int CalcZShiftAngular(const OpenXcom::Position& distance);
-int CalcDeviationAngular(int zShift, double accuracy);
-OpenXcom::Position XCOMAccuracyAngular(const OpenXcom::Position& distance, double accuracy);
-} // namespace AngularFiringSpread

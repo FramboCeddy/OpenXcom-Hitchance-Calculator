@@ -5,11 +5,13 @@
 
 namespace cli
 {
+using cliArgs = std::tuple<OpenXcom::Position, OpenXcom::Unit, AccuracyTest::FiringMode, bool, int>;
+
 std::string trim(const std::string& str);
 void printHelp(const std::string& progName);
 void printUnits();
-OpenXcom::Unit parseUnit(const std::string& Str);
+OpenXcom::Unit parseUnit(std::string Str);
 OpenXcom::Position parsePosition(const std::string& coordStr);
 auto parseAccuracy(const std::string& accStr);
-std::tuple<OpenXcom::Position, OpenXcom::Unit, AccuracyTest::FiringMode, bool, int> parseCLI(int argc, char* argv[]);
+cliArgs parseCLI(int argc, char* argv[]);
 } // namespace cli

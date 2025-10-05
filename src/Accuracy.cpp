@@ -1,36 +1,83 @@
 #include "Accuracy.h"
-#include "RNG.h"
 #include "Structs.h"
 #include "Utils.h"
-#include "Xcom.h"
 #include <cmath>
 #include <numeric>
+
+namespace OpenXcom
+{
+// Calculates the zShift based on the position of the shooter for vanilla spread.
+int CalcZShiftVanilla(const Position& Pos)
+{
+    int xDist = std::abs(Pos.x);
+    int yDist = std::abs(Pos.y);
+    int zDist = std::abs(Pos.z);
+    int xyShift, zShift;
+
+    if (xDist / 2 <= yDist)
+        xyShift = xDist / 4 + yDist;
+    else
+        xyShift = (xDist + yDist) / 2;
+
+    if (xyShift <= zDist)
+        zShift = xyShift / 2 + zDist;
+    else
+        zShift = xyShift + zDist / 2;
+
+    return zShift;
+}
+// Calculates the zShift based on the position of the shooter for uniform spread.
+int CalcZShiftUniform(const Position& Pos)
+{
+    int xDist = std::abs(Pos.x);
+    int yDist = std::abs(Pos.y);
+    int zDist = std::abs(Pos.z);
+    int xyShift, zShift;
+
+    if (xDist <= yDist)
+        xyShift = xDist / 4 + yDist;
+    else
+        xyShift = xDist + yDist / 4;
+
+    xyShift *= 0.839;
+
+    if (xyShift <= zDist)
+        zShift = xyShift / 2 + zDist;
+    else
+        zShift = xyShift + zDist / 2;
+
+    return zShift;
+}
+} // namespace OpenXcom
 
 namespace AccuracyTest
 {
 constexpr bool PosInCircle(const OpenXcom::Position& pos, int diameter)
 {
+    // distance of point (x, y) to circle centered on origin < circle radius
     return 4 * (pos.x * pos.x) + 4 * (pos.y * pos.y) < diameter * diameter;
 }
 bool CircleIntersect(const OpenXcom::Position& startPos, const OpenXcom::Position& endPos, int diameter)
 {
+    bool isInCircle{PosInCircle(endPos, diameter)};
     // If our shot position is within the circle, we will intersect
-    if (PosInCircle(endPos, diameter))
+    if (isInCircle)
     {
         return true;
     }
     // Ax + By + C = 0
-    int lineA{startPos.y - endPos.y};
-    int lineB{endPos.x - startPos.x};
-    int lineC{startPos.x * endPos.y - endPos.x * startPos.y};
+    int A{startPos.y - endPos.y};
+    int B{endPos.x - startPos.x};
+    int C{startPos.x * endPos.y - endPos.x * startPos.y};
 
-    // if our shot is parallel to z axis return true so we dont skip shots
-    // FIXME: this really should not return true just so we don't early skip
-    if (!lineA && !lineB)
+    // shot parrallel to z-axis => shot will miss if it's outside circle
+    if (!A && !B)
     {
-        return true;
+        // Note: because we are returning early when isIncircle is true, this is essentially return false
+        return isInCircle;
     }
-    double lineDistSq{static_cast<double>(lineC * lineC) / static_cast<double>(lineA * lineA + lineB * lineB)};
+    // distance of point (0, 0) to line < circle radius
+    double lineDistSq{static_cast<double>(C * C) / static_cast<double>(A * A + B * B)};
     return 4 * lineDistSq < diameter * diameter;
 }
 bool CylIntersect(const OpenXcom::Position& startPos, const OpenXcom::Position& endPos, int diameter, double halfHeight)
@@ -226,7 +273,6 @@ double TestAllShotsUniform(const OpenXcom::Position& shooterPos, int alienDiamet
             }
         }
     }
-
     // our final hitchance will be a weighted average of the shots inside the
     // big circle that land (as they are used as is) and the shots outside the
     // big circle that get mapped to the hitchance for shots inside the smaller
@@ -272,12 +318,12 @@ void CalcOneDistVanilla(const OpenXcom::Position& distance, const OpenXcom::Unit
     std::vector<double> accChances{CalcHitChances(devHitChances)};
     if (accuracy != -1)
     {
-        // single accuracy -> print to console
+        // single accuracy => print to console
         Utils::printHitChance(distance, alien.race, accuracy, accChances[0]);
     }
     else
     {
-        // accuracy sweep -> write to output file
+        // accuracy sweep => write to output file
         Utils::writeHitChancesToFile(distance, alien.race, accChances);
     }
 }
@@ -323,12 +369,12 @@ void CalcOneDistUniform(const OpenXcom::Position& distance, const OpenXcom::Unit
     std::vector<double> accChances{CalcHitChances(devHitChances)};
     if (accuracy != -1)
     {
-        // single accuracy -> print to console
+        // single accuracy => print to console
         Utils::printHitChance(distance, alien.race, accuracy, accChances[0]);
     }
     else
     {
-        // accuracy sweep -> write to output file
+        // accuracy sweep => write to output file
         Utils::writeHitChancesToFile(distance, alien.race, accChances);
     }
 }
@@ -338,7 +384,7 @@ std::vector<double> CalcHitChances(const std::vector<double>& devHitChances)
     std::vector<double> hitChances(devHitChances.size() - Constants::MOV_AVG_WNDW + 1);
     auto firstVal{devHitChances.begin()};
     auto lastVal{devHitChances.begin() + Constants::MOV_AVG_WNDW};
-    for (auto& hitChance : hitChances)
+    for (double& hitChance : hitChances)
     {
         hitChance = std::accumulate(firstVal, lastVal, 0.0) / Constants::MOV_AVG_WNDW;
         ++firstVal;
@@ -347,29 +393,3 @@ std::vector<double> CalcHitChances(const std::vector<double>& devHitChances)
     return hitChances;
 }
 } // namespace AccuracyTest
-namespace AngularFiringSpread
-{
-int CalcZShiftAngular(const OpenXcom::Position& Pos)
-{
-    // Euclidean distance but casted to int to stay on the same level as OXCE ZShift
-    // NOTE: It is probably possible to use the squared distance to avoid a sqrt call
-    return static_cast<int>(std::sqrt(Pos.x * Pos.x + Pos.y * Pos.y + Pos.z * Pos.z));
-}
-
-int CalcDeviationAngular(int zShift, double accuracy)
-{
-    // Remove the binary +50 or +10 from deviation
-    int deviation = OpenXcom::RNG::generate(0, 100) - (accuracy * 100);
-    // we first max deviation to 1 then multiply by zshift to keep long range shots having a little bit of offset
-    deviation = std::max(1, deviation);
-    return zShift * deviation / 200;
-}
-
-OpenXcom::Position XCOMAccuracyAngular(const OpenXcom::Position& Pos, double accuracy)
-{
-    int zShift = CalcZShiftAngular(Pos);
-    int deviation = CalcDeviationAngular(zShift, accuracy);
-    return OpenXcom::CalcShotOffsetUniform(deviation);
-}
-
-} // namespace AngularFiringSpread
