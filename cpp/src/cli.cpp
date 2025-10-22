@@ -2,6 +2,7 @@
 #include "Constants.h"
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <stdlib.h>
 #include <string>
 #include <vector>
@@ -20,11 +21,12 @@ std::string TrimWhitespace(const std::string& str)
 
 void PrintHelp(const std::string& progName)
 {
-    std::cout << "Usage: " << progName << " (--dist | -d) <x,y,z> [--acc | -a <integer>]\n\n"
+    std::cout << "Usage: " << progName << " (--dist | -d) <'x,y,z'> [(--acc | -a) <integer>]\n\n"
               << "Options:\n"
               << "  --help,       -h                      | Show this help message\n"
               << "  --listunits,  -l                      | Show all units that can be used.\n"
-              << "  --dist,       -d <x,y,z>              | 3D distance between the shooter and target in tiles as x,y,z (required)\n"
+              << "  --dist,       -d <'x,y,z'>            | 3D distance between the shooter and target in tiles as x,y,z (required)\n"
+              << "                                        | Omitting the second or third coordinate values will set them as 0.\n"
               << "  --unit,       -u <name>               | Name of the unit you are aiming at. (default: Muton)\n"
               << "  --kneel,      -k <true|false>         | Is the unit you are aiming at kneeling or not. (default: false)\n"
               << "  --mode,       -m <vanilla|uniform>    | Chooses the spread model that you wish to test. (default: vanilla)\n"
@@ -94,22 +96,32 @@ OpenXcom::Unit ParseUnit(std::string Str)
 OpenXcom::Position ParsePosition(const std::string& coordStr)
 {
     std::stringstream ss(coordStr);
-    std::vector<int> coords;
-    coords.reserve(3);
-    std::string item;
-    while (std::getline(ss, item, ','))
+    std::vector<int> coords{0, 0, 0};
+    std::string coord;
+    for (auto& val : coords)
     {
-        item = TrimWhitespace(item);
         try
         {
-            coords.push_back(std::stoi(item));
+            val = std::getline(ss, coord, ',') ? std::stoi(coord) : 0;
         }
-        catch (const std::invalid_argument&)
+        catch (const std::invalid_argument& err)
         {
-            std::cerr << "Invalid coordinate value: " << item << "\n";
+            std::cerr << "Invalid coordinate value: " << coord << "\n";
             return OpenXcom::Position{-1, -1, -1};
         }
     }
+    // while (std::getline(ss, coord, ','))
+    // {
+    //     try
+    //     {
+    //         coords.push_back(std::stoi(coord));
+    //     }
+    //     catch (const std::invalid_argument& err)
+    //     {
+    //         std::cerr << "Invalid coordinate value: " << coord << "\n";
+    //         return OpenXcom::Position{-1, -1, -1};
+    //     }
+    // }
     return OpenXcom::Position{coords[0] * Constants::TILE_WIDTH,
                               coords[1] * Constants::TILE_WIDTH,
                               coords[2] * Constants::TILE_HEIGHT};
@@ -120,11 +132,15 @@ int ParseAccuracy(const std::string& accStr)
     int accuracy{};
     try
     {
-        accuracy = std::stoi(TrimWhitespace(accStr));
+        accuracy = std::stoi(accStr);
+        if (accuracy < 0)
+        {
+            throw std::invalid_argument("Negative accuracy value.");
+        }
     }
-    catch (const std::invalid_argument&)
+    catch (const std::invalid_argument& err)
     {
-        std::cerr << "Invalid accuracy: " << accStr << " - must be a positive whole number\n";
+        std::cerr << "Invalid accuracy: " << accStr << " - must be a positive whole number\nProceeding with full accuracy sweep.\n";
         return -1;
     }
     return accuracy;

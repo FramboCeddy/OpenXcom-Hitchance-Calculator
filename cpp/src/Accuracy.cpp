@@ -91,9 +91,9 @@ bool CircleIntersect(const OpenXcom::Position& startPos, const OpenXcom::Positio
     }
     // Ax + By + C = 0
     // NOTE: Could also use doubles, Don't know which is better performance
-    long long A{(startPos.y - endPos.y)};
-    long long B{(endPos.x - startPos.x)};
-    long long C{(startPos.x * endPos.y - endPos.x * startPos.y)};
+    long long A{startPos.y - endPos.y};
+    long long B{endPos.x - startPos.x};
+    long long C{startPos.x * endPos.y - endPos.x * startPos.y};
 
     // shot parrallel to z-axis => shot will miss if it's outside circle
     if (A == 0 && B == 0)
@@ -116,16 +116,17 @@ bool CylIntersect(const OpenXcom::Position& startPos, const OpenXcom::Position& 
         return true;
     }
 
-    int dx{(endPos.x - startPos.x)};
-    int dy{(endPos.y - startPos.y)};
-    int dz{(endPos.z - startPos.z)};
+    int dx{endPos.x - startPos.x};
+    int dy{endPos.y - startPos.y};
+    int dz{endPos.z - startPos.z};
 
     // At^2 + Bt + C = 0
     // Quadratic coefficients for intersection with circular base
     // using 4*C from the Discriminant so that all values are ints.
+    // x^2 + y^2 - r^2 => 4(x^2 + y^2) - d^2
     long long A{dx * dx + dy * dy};
     long long B{2 * (startPos.x * dx + startPos.y * dy)};
-    long long Cmult4{(4 * (startPos.x * startPos.x) + 4 * (startPos.y * startPos.y) - (diameter * diameter))};
+    long long Cmult4{4 * (startPos.x * startPos.x + startPos.y * startPos.y) - (diameter * diameter)};
 
     // Shot parallel to Z-axis => Intersection occurs if shot is inside circle
     if (A == 0)

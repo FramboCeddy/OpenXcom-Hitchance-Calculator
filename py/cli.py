@@ -4,18 +4,13 @@ from Structs import Unit, Position
 
 type cliArgs = tuple[Position, Unit, str, bool, int]
 
-
-# Helper: trim whitespace from both ends
-def TrimWhitespace(string: str) -> str:
-    stripped = string.strip()
-    return stripped
-
 def PrintHelp(progName: str) -> None:
-    print(f"Usage: python {progName} (--dist | -d) <x,y,z> [--acc | -a <integer>]\n")
+    print(f"Usage: python {progName} (--dist | -d) <'x,y,z'> [--acc | -a <integer>]\n")
     print("Options:")
     print("  --help,       -h                      | Show this help message")
     print("  --listunits,  -l                      | Show all units that can be used.")
-    print("  --dist,       -d <x,y,z>              | 3D distance between the shooter and target in tiles as x,y,z (required")
+    print("  --dist,       -d <'x,y,z'>            | 3D distance between the shooter and target in tiles as x,y,z (required")
+    print("                                        | Omitting the second or third coordinate values will set them as 0.")
     print("  --unit,       -u <name>               | Name of the unit you are aiming at. (default: Muton)")
     print("  --kneel,      -k <true|false>         | Is the unit you are aiming at kneeling or not. (default: false)")
     print("  --mode,       -m <vanilla|uniform>    | Chooses the spread model that you wish to test. (default: vanilla)")
@@ -57,7 +52,9 @@ def ParseUnit(unitStr: str) -> Unit:
 
 def ParsePosition(coordStr: str) -> Position:
     try:
-        x,y,z = (int(TrimWhitespace(i)) for i in coordStr.split(","))
+        coordsList: list[int] = [int(i) for i in coordStr.split(",")]
+        coordsList = coordsList[:3] + [0]*(3-len(coordsList)) # extend to exactly 3
+        x,y,z = coordsList
         return Position(x*Constants.TILE_WIDTH, y*Constants.TILE_WIDTH, z*Constants.TILE_HEIGHT)
     except:
         print(f"Invalid coordinate value", file=stderr)
@@ -66,7 +63,9 @@ def ParsePosition(coordStr: str) -> Position:
 def ParseAccuracy(accStr: str) -> int:
     accuracy: int = -1
     try:
-        accuracy = int(TrimWhitespace(accStr))
+        accuracy = int(accStr)
+        if accuracy < 0:
+            raise AssertionError
         return accuracy
     except:
         print(f"Invalid accuracy: {accStr} - must be a positive whole number", file=stderr)

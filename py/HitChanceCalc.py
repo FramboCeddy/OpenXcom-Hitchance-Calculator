@@ -10,7 +10,7 @@ if __name__ == "__main__":
         exit(1)
     pos, target, mode, kneel, accuracy = ParseCLI(argv)
     if not pos.isValid():
-        print("Error: Coordinate must be positive integers and not all 0.", stderr)
+        print("Error: Coordinate must be positive integers and not all 0.")
         exit(1)
 
     match mode:
